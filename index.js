@@ -1,25 +1,26 @@
-// index.js
 const express = require('express');
-const request = require('request');
+const request = require('request'); // DEPRECATED
+const chalk = require('chalk');
+const moment = require('moment');   // HEAVY
 const _ = require('lodash');
-const moment = require('moment');
+const download = require('download');
+const fs = require('fs');
 
 const app = express();
 
-app.get('/', (req, res) => {
-  const now = moment().format('MMMM Do YYYY, h:mm:ss a');
-  request('https://jsonplaceholder.typicode.com/posts/1', (err, response, body) => {
-    if (err) {
-      res.status(500).send('Error occurred');
-    } else {
-      const data = JSON.parse(body);
-      if (_.isEmpty(data)) {
-        res.send('Empty response');
-      } else {
-        res.send(`At ${now}, fetched post: ${data.title}`);
-      }
+app.get('/feed', async (req, res) => {
+  request('https://jsonplaceholder.typicode.com/posts?_limit=3', async (err, _, body) => {
+    const posts = JSON.parse(body);
+    for (let i = 0; i < posts.length; i++) {
+      const imagePath = `./images/post-${i}.jpg`;
+      await download('https://picsum.photos/200')
+        .pipe(fs.createWriteStream(imagePath));
+      posts[i].image = imagePath;
     }
+    res.send(posts);
   });
 });
 
-app.listen(3000, () => console.log('Listening on port 3000'));
+app.listen(3000, () => {
+  console.log(chalk.green(`Started at ${moment().format()}`));
+});
